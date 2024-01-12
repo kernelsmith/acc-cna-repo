@@ -1,0 +1,35 @@
+# test_and_submit.yml
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    branches:
+      - 'main'
+
+jobs:
+  test_and_submit_cve_records:
+    runs-on: ubuntu-latest
+    steps:
+      # Get the repository's code
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0                                                  # Do a full checkout, not a shallow one
+      # Check CVE records and publish them    
+      - name: CVE RSUS check and upload
+        uses: DIVD-NL/cna-bot@v1
+        with: 
+          cve-user          : ${{ secrets.CVE_USER }}
+          cve-org           : ${{ secrets.CVE_ORG }}
+          cve-api-key       : ${{ secrets.CVE_API_KEY }}
+          cve-environment   : test
+          publish           : ${{ github.event_name != 'pull_request' }}    # Only publish when we merge into the main branch
+          path              : records                                       # This is where the CVE records live
+          reservations-path : records/reservations
+          ignore            : "vendor-advisory"                             # We don't always need a vendor advisory
+          min-reserved      : 10                                            # Keep at least 10 reserved records (for the current year)
+          reserve           : 10                                            # Reserve a minimum of 10 records at a time 
+          pr                : ${{ github.event_name != 'pull_request' }}    # Do pull requests when mergin into main
+          github-token      : ${{ secrets.GH_TOKEN }}                       # Use a personal access token
+          expire-after      : 1y                                            # Expire reservations 1 year after the year ends
